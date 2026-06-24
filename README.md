@@ -8,6 +8,14 @@ Teams take turns. The drawer receives the device, sees the word in secret, then 
 
 No typing during the game — just the drawer and the device, everyone else watches the paper.
 
+## Rules
+
+- Teams take turns. The drawer sees the word in secret and draws it on paper; no speaking, no gestures.
+- Teammates guess while the timer runs.
+- **✓ Got it!** — tap to award +1 to the drawing team.
+- **✗ Missed** — 0 points; play passes to the next team.
+- First team to reach the agreed score wins.
+
 ## Features
 
 - **Secret word reveal** — teammates look away while the drawer taps *Show the word*
