@@ -337,7 +337,7 @@ end
 
 function PictionaryScreen:_buildReadyLayout()
     local sw         = DeviceScreen:getWidth()
-    local sh         = DeviceScreen:getHeight()
+    local sh = DeviceScreen:getHeight()
     local short_side = math.min(sw, sh)
     local is_fr      = self.lang == "fr"
     local team       = self.teams[self.current_team]
@@ -410,7 +410,7 @@ end
 
 function PictionaryScreen:_buildDrawingLayout()
     local sw         = DeviceScreen:getWidth()
-    local sh         = DeviceScreen:getHeight()
+    local sh = DeviceScreen:getHeight()
     local short_side = math.min(sw, sh)
     local is_fr      = self.lang == "fr"
     local team       = self.teams[self.current_team]
