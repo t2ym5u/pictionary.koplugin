@@ -19,7 +19,7 @@ local TextWidget      = require("ui/widget/textwidget")
 local UIManager       = require("ui/uimanager")
 local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
-local _               = require("gettext")
+local _               = require("i18n")
 
 local MenuHelper  = require("menu_helper")
 local ScreenBase  = require("screen_base")
@@ -32,7 +32,7 @@ local DEFAULT_DURATION  = 60
 local DEFAULT_DIFF      = "mixed"
 local DEFAULT_CAT       = "all"
 
-local RULES_EN = _([[
+local GAME_RULES_EN = _([[
 Pictionary Party — Rules
 
 Teams take turns. The current team's drawer receives the device, sees the word privately, then draws it on paper while teammates guess.
@@ -45,7 +45,7 @@ Teams take turns. The current team's drawer receives the device, sees the word p
 First team to reach the agreed score wins!
 ]])
 
-local RULES_FR = [[
+local GAME_RULES_FR = [[
 Pictionary Party — Règles
 
 Les équipes jouent à tour de rôle. Le dessinateur reçoit l'appareil, voit le mot en secret, puis le dessine sur papier pendant que ses coéquipiers devinent.
@@ -351,7 +351,7 @@ function PictionaryScreen:_buildReadyLayout()
         buttons = {{
             { text = reveal_text, callback = function() self:onReveal() end },
             { text = is_fr and "Options" or "Options", callback = function() self:openOptionsMenu() end },
-            self:makeRulesButtonConfig(RULES_EN, RULES_FR),
+            self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
             self:makeCloseButtonConfig(),
         }},
     }
@@ -393,9 +393,8 @@ function PictionaryScreen:_buildReadyLayout()
     local vs2 = VerticalSpan:new{ width = Size.span.vertical_large * 4 }
 
     self.timer_widget = nil
-    self.layout = VerticalGroup:new{
+    local content = VerticalGroup:new{
         align = "center",
-        vs,
         score_w,
         vs2,
         team_w,
@@ -403,9 +402,8 @@ function PictionaryScreen:_buildReadyLayout()
         hint_w,
         vs2,
         instr_w,
-        vs2,
-        buttons,
     }
+    self:buildPortraitLayout(nil, content, buttons)
 end
 
 function PictionaryScreen:_buildDrawingLayout()
@@ -457,17 +455,15 @@ function PictionaryScreen:_buildDrawingLayout()
     local vs  = VerticalSpan:new{ width = Size.span.vertical_large }
     local vs2 = VerticalSpan:new{ width = Size.span.vertical_large * 3 }
 
-    self.layout = VerticalGroup:new{
+    local content = VerticalGroup:new{
         align = "center",
-        vs,
         team_w,
         vs2,
         word_w,
         vs2,
         self.timer_widget,
-        vs2,
-        result_btns,
     }
+    self:buildPortraitLayout(nil, content, result_btns)
 end
 
 -- ---------------------------------------------------------------------------
