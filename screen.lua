@@ -342,6 +342,14 @@ function PictionaryScreen:_buildReadyLayout()
     local is_fr      = self.lang == "fr"
     local team       = self.teams[self.current_team]
 
+    -- Title bar with Options menu
+    local title_bar = self:buildTitleBar(_("Pictionary Party"), function()
+        return {
+            { text = is_fr and "Réglages" or "Settings", callback = function() self:openOptionsMenu() end },
+            self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
+        }
+    end)
+
     -- Buttons
     local btn_w = math.floor(sw * 0.92)
     local reveal_text = is_fr and "Voir le mot" or "Show the word"
@@ -350,9 +358,6 @@ function PictionaryScreen:_buildReadyLayout()
         width   = btn_w,
         buttons = {{
             { text = reveal_text, callback = function() self:onReveal() end },
-            { text = is_fr and "Options" or "Options", callback = function() self:openOptionsMenu() end },
-            self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
-            self:makeCloseButtonConfig(),
         }},
     }
 
@@ -403,7 +408,7 @@ function PictionaryScreen:_buildReadyLayout()
         vs2,
         instr_w,
     }
-    self:buildPortraitLayout(nil, content, buttons)
+    self:buildPortraitLayout(title_bar, content, buttons)
 end
 
 function PictionaryScreen:_buildDrawingLayout()
@@ -412,6 +417,14 @@ function PictionaryScreen:_buildDrawingLayout()
     local short_side = math.min(sw, sh)
     local is_fr      = self.lang == "fr"
     local team       = self.teams[self.current_team]
+
+    -- Title bar with Options menu
+    local title_bar = self:buildTitleBar(_("Pictionary Party"), function()
+        return {
+            { text = is_fr and "Réglages" or "Settings", callback = function() self:openOptionsMenu() end },
+            self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
+        }
+    end)
 
     -- Word widget — font size adapts to word length
     local word    = self.current_word
@@ -463,7 +476,7 @@ function PictionaryScreen:_buildDrawingLayout()
         vs2,
         self.timer_widget,
     }
-    self:buildPortraitLayout(nil, content, result_btns)
+    self:buildPortraitLayout(title_bar, content, result_btns)
 end
 
 -- ---------------------------------------------------------------------------
