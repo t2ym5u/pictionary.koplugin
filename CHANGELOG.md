@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.13] - 2026-09-30
+
+### Added
+- A spec over the word list: every category has an id, a name and all three
+  difficulty buckets, no bucket is empty, every entry is a non-empty string
+  without stray whitespace, and ids are unique. A missing bucket used to
+  surface only when a team drew that category mid-round.
+- The duplicate check is per-category on purpose: categories overlap by
+  design -- "Shark" belongs to both ocean and animals -- so only a word
+  repeated inside one category is a defect. There are none.
+
 ## [1.1.8] - 2026-07-29
 
 ### Changed
