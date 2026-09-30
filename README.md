@@ -2,6 +2,10 @@
 
 A **Pictionary Party** display plugin for [KOReader](https://github.com/koreader/koreader) — put your e-reader in the middle of the table and play Pictionary with pen and paper.
 
+## Screenshot
+
+![Screenshot](images/pictionary.png)
+
 ## Concept
 
 Teams take turns. The drawer receives the device, sees the word in secret, then draws it on paper while teammates guess. A countdown timer runs. One tap records the result, scores update automatically, and play passes to the next team.
