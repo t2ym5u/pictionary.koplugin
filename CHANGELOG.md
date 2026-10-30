@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-10-30
+
+### Changed
+- The interface text now follows KOReader's language; the Language setting
+  only picks the words to draw. Default team names ("Team 1") follow
+  KOReader's language too.
+- The "Settings" submenu is replaced by direct entries in the title-bar
+  menu, each showing its current value: New game, "Difficulty: …",
+  "Language: …", "Teams: …", "Timer: …", "Category: …", Rules.
+- New game resets the scores and gives the first team the turn; it replaces
+  the old "Reset scores" entry.
+- Redesigned play screen, in line with the other games: a full-width action
+  bar, and the team name, word and timer sized to the room available. The
+  status line shows the scores ("Team 1: 3 · Team 2: 1") and wraps in
+  landscape instead of being cut off.
+- New README screenshot.
+
+### Fixed
+- Text was sized in pixels and then scaled again by the screen DPI, so on a
+  high-DPI reader the team name, word and timer came out about twice too big
+  and ran off the screen edges. Long words and team names now shrink to fit,
+  and "Pass the device to the drawer" wraps instead of being cut off in
+  French.
+
 ## [1.1.15] - 2026-10-07
 
 ### Fixed
