@@ -7,12 +7,11 @@ local function lrequire(name)
     return package.loaded[key]
 end
 
-local ButtonTable     = require("ui/widget/buttontable")
 local Device          = require("device")
 local Font            = require("ui/font")
-local FrameContainer  = require("ui/widget/container/framecontainer")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
+local RenderText      = require("ui/rendertext")
 local Size            = require("ui/size")
 local TextBoxWidget   = require("ui/widget/textboxwidget")
 local TextWidget      = require("ui/widget/textwidget")
@@ -20,12 +19,44 @@ local UIManager       = require("ui/uimanager")
 local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
 local _               = require("i18n")
+local T               = require("ffi/util").template
 
 local MenuHelper  = require("menu_helper")
 local ScreenBase  = require("screen_base")
 local Words       = lrequire("words")
 
 local DeviceScreen = Device.screen
+
+-- ---------------------------------------------------------------------------
+-- Text sizing helpers
+--
+-- Font:getFace() scales its size by the screen DPI, so a size worked out from
+-- pixel dimensions has to be divided back first, or every line comes out
+-- about twice too big on a 300 dpi reader and runs off the screen edges.
+-- ---------------------------------------------------------------------------
+
+local DPI_SCALE = DeviceScreen:scaleBySize(1000) / 1000
+
+local function pxFace(px)
+    return Font:getFace("cfont", math.max(8, math.floor(px / DPI_SCALE)))
+end
+
+-- One line of text at up to `px` pixels, shrunk until it fits `max_w`.
+local function fitLine(text, px, max_w)
+    local face = pxFace(px)
+    while px > 12 do
+        local m = RenderText:sizeUtf8Text(0, max_w * 10, face, text, true, false)
+        if m.x <= max_w then break end
+        px   = math.floor(px * 0.9)
+        face = pxFace(px)
+    end
+    return TextWidget:new{ text = text, face = face, max_width = max_w }
+end
+
+-- A paragraph wrapped to `width`, centred.
+local function wrapText(text, face, width)
+    return TextBoxWidget:new{ text = text, face = face, width = width, alignment = "center" }
+end
 
 local DEFAULT_NB_TEAMS = 2
 local DEFAULT_DURATION  = 60
@@ -73,9 +104,8 @@ function PictionaryScreen:init()
 
     self.teams = {}
     for i = 1, nb do
-        local default_name = self.lang == "fr" and ("Équipe " .. i) or ("Team " .. i)
         self.teams[i] = {
-            name  = self.plugin:getSetting("team_name_" .. i, default_name),
+            name  = self.plugin:getSetting("team_name_" .. i, T(_("Team %1"), i)),
             score = 0,
         }
     end
@@ -174,8 +204,10 @@ function PictionaryScreen:onResult(found)
     UIManager:setDirty(self, function() return "ui", self.dimen end)
 end
 
-function PictionaryScreen:onResetScores()
-    for _, t in ipairs(self.teams) do t.score = 0 end
+-- New game: scores back to zero, first team to play.
+function PictionaryScreen:onNewGame()
+    self:_stopCountdown()
+    for _i, t in ipairs(self.teams) do t.score = 0 end
     self.current_team = 1
     self.phase        = "ready"
     self:buildLayout()
@@ -186,48 +218,19 @@ end
 -- Settings menus
 -- ---------------------------------------------------------------------------
 
-function PictionaryScreen:openOptionsMenu()
-    local is_fr = self.lang == "fr"
-    local items = {
-        { id = "lang",       text = is_fr and "Langue…"          or "Language…" },
-        { id = "teams",      text = is_fr and "Nombre d'équipes…" or "Number of teams…" },
-        { id = "duration",   text = is_fr and "Durée du chrono…"  or "Timer duration…" },
-        { id = "category",   text = is_fr and "Catégorie…"        or "Category…" },
-        { id = "difficulty", text = is_fr and "Difficulté…"       or "Difficulty…" },
-        { id = "reset",      text = is_fr and "Remettre les scores à zéro" or "Reset scores" },
-    }
-    MenuHelper.openPickerMenu{
-        title     = is_fr and "Options" or "Options",
-        items     = items,
-        parent    = self,
-        on_select = function(id)
-            if     id == "lang"       then self:openLangMenu()
-            elseif id == "teams"      then self:openTeamsMenu()
-            elseif id == "duration"   then self:openDurationMenu()
-            elseif id == "category"   then self:openCategoryMenu()
-            elseif id == "difficulty" then self:openDifficultyMenu()
-            elseif id == "reset"      then self:onResetScores()
-            end
-        end,
-    }
+function PictionaryScreen:_durationLabel(dur)
+    return string.format("%d:%02d", math.floor(dur / 60), dur % 60)
 end
 
 function PictionaryScreen:openLangMenu()
     MenuHelper.openPickerMenu{
-        title      = "Language / Langue",
+        title      = _("Language"),
         items      = { { id = "fr", text = "Français" }, { id = "en", text = "English" } },
         current_id = self.lang,
         parent     = self,
         on_select  = function(lang)
             self.lang = lang
             self.plugin:saveSetting("lang", lang)
-            -- Update team names only if still at defaults
-            for i, t in ipairs(self.teams) do
-                local old_default = (lang == "en" and "Équipe " or "Team ") .. i
-                if t.name == old_default then
-                    t.name = (lang == "fr" and "Équipe " or "Team ") .. i
-                end
-            end
             self:buildLayout()
             UIManager:setDirty(self, function() return "ui", self.dimen end)
         end,
@@ -235,13 +238,12 @@ function PictionaryScreen:openLangMenu()
 end
 
 function PictionaryScreen:openTeamsMenu()
-    local is_fr = self.lang == "fr"
     local items = {}
     for n = 2, 6 do
-        items[#items + 1] = { id = n, text = tostring(n) .. " " .. (is_fr and "équipes" or "teams") }
+        items[#items + 1] = { id = n, text = T(_("%1 teams"), n) }
     end
     MenuHelper.openPickerMenu{
-        title      = is_fr and "Nombre d'équipes" or "Number of teams",
+        title      = _("Teams"),
         items      = items,
         current_id = #self.teams,
         parent     = self,
@@ -250,7 +252,7 @@ function PictionaryScreen:openTeamsMenu()
             self.plugin:saveSetting("nb_teams", n)
             while #self.teams < n do
                 local i = #self.teams + 1
-                self.teams[i] = { name = (self.lang == "fr" and "Équipe " or "Team ") .. i, score = 0 }
+                self.teams[i] = { name = T(_("Team %1"), i), score = 0 }
             end
             while #self.teams > n do
                 table.remove(self.teams)
@@ -263,15 +265,12 @@ function PictionaryScreen:openTeamsMenu()
 end
 
 function PictionaryScreen:openDurationMenu()
-    local is_fr = self.lang == "fr"
-    local items = {
-        { id = 45,  text = "0:45" },
-        { id = 60,  text = "1:00" },
-        { id = 90,  text = "1:30" },
-        { id = 120, text = "2:00" },
-    }
+    local items = {}
+    for _i, d in ipairs({ 45, 60, 90, 120 }) do
+        items[#items + 1] = { id = d, text = self:_durationLabel(d) }
+    end
     MenuHelper.openPickerMenu{
-        title      = is_fr and "Durée" or "Duration",
+        title      = _("Timer"),
         items      = items,
         current_id = self.duration,
         parent     = self,
@@ -283,14 +282,13 @@ function PictionaryScreen:openDurationMenu()
 end
 
 function PictionaryScreen:openCategoryMenu()
-    local is_fr   = self.lang == "fr"
     local lang_list = Words[self.lang] or Words.fr
-    local items   = { { id = "all", text = is_fr and "Toutes" or "All" } }
-    for _, cat in ipairs(lang_list) do
+    local items   = { { id = "all", text = _("All categories") } }
+    for _i, cat in ipairs(lang_list) do
         items[#items + 1] = { id = cat.id, text = cat.name }
     end
     MenuHelper.openPickerMenu{
-        title      = is_fr and "Catégorie" or "Category",
+        title      = _("Category"),
         items      = items,
         current_id = self.category,
         parent     = self,
@@ -302,15 +300,12 @@ function PictionaryScreen:openCategoryMenu()
 end
 
 function PictionaryScreen:openDifficultyMenu()
-    local is_fr = self.lang == "fr"
-    local items = {
-        { id = "mixed", text = is_fr and "Mixte"     or "Mixed" },
-        { id = "e",     text = is_fr and "Facile"    or "Easy" },
-        { id = "m",     text = is_fr and "Moyen"     or "Medium" },
-        { id = "h",     text = is_fr and "Difficile" or "Hard" },
-    }
+    local items = {}
+    for _i, id in ipairs({ "mixed", "e", "m", "h" }) do
+        items[#items + 1] = { id = id, text = self:_diffLabel(id) }
+    end
     MenuHelper.openPickerMenu{
-        title      = is_fr and "Difficulté" or "Difficulty",
+        title      = _("Difficulty"),
         items      = items,
         current_id = self.difficulty,
         parent     = self,
@@ -335,148 +330,119 @@ function PictionaryScreen:buildLayout()
     self:updateStatus()
 end
 
-function PictionaryScreen:_buildReadyLayout()
-    local sw         = DeviceScreen:getWidth()
-    local sh = DeviceScreen:getHeight()
-    local short_side = math.min(sw, sh)
-    local is_fr      = self.lang == "fr"
-    local team       = self.teams[self.current_team]
-
-    -- Title bar with Options menu
-    local title_bar = self:buildTitleBar(_("Pictionary Party"), function()
+function PictionaryScreen:_titleBar()
+    return self:buildTitleBar(_("Pictionary Party"), function()
         return {
-            { text = is_fr and "Réglages" or "Settings", callback = function() self:openOptionsMenu() end },
+            { text = _("New game"), callback = function() self:onNewGame() end },
+            { text = T(_("Difficulty: %1"), self:_diffLabel()), callback = function() self:openDifficultyMenu() end },
+            { text = T(_("Language: %1"), self.lang:upper()),   callback = function() self:openLangMenu() end },
+            { text = T(_("Teams: %1"), #self.teams),            callback = function() self:openTeamsMenu() end },
+            { text = T(_("Timer: %1"), self:_durationLabel(self.duration)),
+              callback = function() self:openDurationMenu() end },
+            { text = self.category == "all" and _("Category: All") or T(_("Category: %1"), self:_catLabel()),
+              callback = function() self:openCategoryMenu() end },
             self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
         }
     end)
+end
 
-    -- Buttons
-    local btn_w = math.floor(sw * 0.92)
-    local reveal_text = is_fr and "Voir le mot" or "Show the word"
-    local buttons = ButtonTable:new{
-        shrink_unneeded_width = true,
-        width   = btn_w,
-        buttons = {{
-            { text = reveal_text, callback = function() self:onReveal() end },
-        }},
-    }
+function PictionaryScreen:_buildReadyLayout()
+    local team  = self.teams[self.current_team]
 
-    -- Team name (large)
-    local team_fs = math.max(28, math.floor(short_side * 0.09))
-    local team_w  = TextWidget:new{
-        text = team.name:upper(),
-        face = Font:getFace("cfont", team_fs),
-    }
-
-    -- Score line
-    local score_parts = {}
-    for _, t in ipairs(self.teams) do
-        score_parts[#score_parts + 1] = t.name .. " : " .. t.score
-    end
-    local score_w = TextWidget:new{
-        text = table.concat(score_parts, "   "),
-        face = Font:getFace("smallinfofont"),
-    }
-
-    -- Instruction
-    local instr_fs = math.max(16, math.floor(short_side * 0.045))
-    local instr    = is_fr and "Passez l'appareil au dessinateur" or "Pass the device to the drawer"
-    local instr_w  = TextWidget:new{
-        text = instr,
-        face = Font:getFace("cfont", instr_fs),
-    }
-
-    -- Category / difficulty hint
-    local cat_label  = self:_catLabel()
-    local diff_label = self:_diffLabel()
-    local hint_w = TextWidget:new{
-        text = cat_label .. "  ·  " .. diff_label,
-        face = Font:getFace("smallinfofont"),
-    }
-
-    local vs  = VerticalSpan:new{ width = Size.span.vertical_large }
-    local vs2 = VerticalSpan:new{ width = Size.span.vertical_large * 4 }
+    local title_bar = self:_titleBar()
+    local controls  = self:_buildControls({
+        { text = _("Show the word"), callback = function() self:onReveal() end },
+    })
+    local bw, bh = self:getBoardBudget(title_bar, controls)
+    local short  = math.min(bw, bh)
+    local vs     = Size.span.vertical_large
 
     self.timer_widget = nil
     local content = VerticalGroup:new{
         align = "center",
-        score_w,
-        vs2,
-        team_w,
-        vs,
-        hint_w,
-        vs2,
-        instr_w,
+        -- Team name (large)
+        fitLine(team.name:upper(), short * 0.14, bw),
+        VerticalSpan:new{ width = vs },
+        -- Category / difficulty hint
+        TextWidget:new{
+            text      = self:joinStatus(self:_catLabel(), self:_diffLabel()),
+            face      = Font:getFace("smallinfofont"),
+            max_width = bw,
+        },
+        VerticalSpan:new{ width = vs * 4 },
+        -- Instruction, wrapped: in French it is wider than a phone screen.
+        wrapText(_("Pass the device to the drawer"),
+            pxFace(short * 0.06), bw),
     }
-    self:buildPortraitLayout(title_bar, content, buttons)
+    self:_placeLayout(title_bar, content, controls)
 end
 
 function PictionaryScreen:_buildDrawingLayout()
-    local sw         = DeviceScreen:getWidth()
-    local sh = DeviceScreen:getHeight()
-    local short_side = math.min(sw, sh)
-    local is_fr      = self.lang == "fr"
-    local team       = self.teams[self.current_team]
+    local team  = self.teams[self.current_team]
 
-    -- Title bar with Options menu
-    local title_bar = self:buildTitleBar(_("Pictionary Party"), function()
-        return {
-            { text = is_fr and "Réglages" or "Settings", callback = function() self:openOptionsMenu() end },
-            self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
-        }
-    end)
-
-    -- Word widget — font size adapts to word length
-    local word    = self.current_word
-    local base_fs = math.floor(short_side * 0.18)
-    local word_fs = #word > 12 and math.floor(base_fs * 0.55)
-                 or #word > 8  and math.floor(base_fs * 0.72)
-                 or base_fs
-    word_fs = math.max(24, math.min(word_fs, 140))
-
-    local word_w = TextWidget:new{
-        text = word,
-        face = Font:getFace("cfont", word_fs),
-    }
+    local title_bar = self:_titleBar()
+    local controls  = self:_buildControls({
+        { text = "✓  " .. _("Got it!"),
+          callback = function() self:onResult(true) end },
+        { text = "✗  " .. _("Missed"),
+          callback = function() self:onResult(false) end },
+    })
+    local bw, bh = self:getBoardBudget(title_bar, controls)
+    local short  = math.min(bw, bh)
+    local vs3    = Size.span.vertical_large * 3
 
     -- Timer
-    local timer_fs = math.max(20, math.floor(short_side * 0.11))
     self.timer_widget = TextWidget:new{
         text = self:_timerText(),
-        face = Font:getFace("cfont", timer_fs),
+        face = pxFace(short * 0.16),
     }
-
-    -- Team indicator
-    local team_w = TextWidget:new{
-        text = team.name,
-        face = Font:getFace("smallinfofont"),
-    }
-
-    -- Result buttons
-    local btn_w = math.floor(sw * 0.92)
-    local result_btns = ButtonTable:new{
-        shrink_unneeded_width = true,
-        width   = btn_w,
-        buttons = {{
-            { text = is_fr and "✓  Trouvé !" or "✓  Got it!",
-              callback = function() self:onResult(true) end },
-            { text = is_fr and "✗  Raté" or "✗  Missed",
-              callback = function() self:onResult(false) end },
-        }},
-    }
-
-    local vs  = VerticalSpan:new{ width = Size.span.vertical_large }
-    local vs2 = VerticalSpan:new{ width = Size.span.vertical_large * 3 }
 
     local content = VerticalGroup:new{
         align = "center",
-        team_w,
-        vs2,
-        word_w,
-        vs2,
+        -- Team indicator
+        TextWidget:new{ text = team.name, face = Font:getFace("smallinfofont"), max_width = bw },
+        VerticalSpan:new{ width = vs3 },
+        -- Word: as big as the width allows
+        fitLine(self.current_word, short * 0.2, bw),
+        VerticalSpan:new{ width = vs3 },
         self.timer_widget,
     }
-    self:buildPortraitLayout(title_bar, content, result_btns)
+    self:_placeLayout(title_bar, content, controls)
+end
+
+-- Status line + action bar, built before the content so the content can be
+-- sized from what they leave over (getBoardBudget).
+function PictionaryScreen:_buildControls(rows)
+    self.status_text:setMaxWidth(self:getControlsWidth())
+    return VerticalGroup:new{
+        align = "center",
+        self.status_text,
+        VerticalSpan:new{ width = Size.span.vertical_large },
+        self:buildActionBar(rows),
+    }
+end
+
+function PictionaryScreen:_placeLayout(title_bar, content, controls)
+    if self:isLandscape() then
+        self:buildLandscapeLayout(title_bar, HorizontalGroup:new{
+            align = "center",
+            content,
+            HorizontalSpan:new{ width = self:getGutter() },
+            controls,
+        })
+    else
+        self:buildPortraitLayout(title_bar, content,
+            VerticalGroup:new{ align = "center", controls, VerticalSpan:new{ width = self:getGutter() } })
+    end
+end
+
+-- "Team 1: 3 · Team 2: 1"
+function PictionaryScreen:_scoreStatus(list)
+    local parts = {}
+    for _i, t in ipairs(list) do
+        parts[#parts + 1] = T(_("%1: %2"), t.name, t.score)
+    end
+    return self:joinStatus((table.unpack or unpack)(parts))
 end
 
 -- ---------------------------------------------------------------------------
@@ -485,7 +451,7 @@ end
 
 function PictionaryScreen:_catLabel()
     if self.category == "all" then
-        return self.lang == "fr" and "Toutes catégories" or "All categories"
+        return _("All categories")
     end
     local lang_list = Words[self.lang] or Words.fr
     for _, cat in ipairs(lang_list) do
@@ -494,24 +460,14 @@ function PictionaryScreen:_catLabel()
     return self.category
 end
 
-function PictionaryScreen:_diffLabel()
-    local tbl = {
-        mixed = { fr = "Mixte",     en = "Mixed" },
-        e     = { fr = "Facile",    en = "Easy" },
-        m     = { fr = "Moyen",     en = "Medium" },
-        h     = { fr = "Difficile", en = "Hard" },
-    }
-    local t = tbl[self.difficulty] or tbl.mixed
-    return t[self.lang] or t.fr
+function PictionaryScreen:_diffLabel(id)
+    local labels = { mixed = _("Mixed"), e = _("Easy"), m = _("Medium"), h = _("Hard") }
+    return labels[id or self.difficulty] or labels.mixed
 end
 
 function PictionaryScreen:updateStatus(msg)
     if msg then ScreenBase.updateStatus(self, msg); return end
-    local parts = {}
-    for _, t in ipairs(self.teams) do
-        parts[#parts + 1] = t.name .. " " .. t.score
-    end
-    ScreenBase.updateStatus(self, table.concat(parts, "  |  "))
+    ScreenBase.updateStatus(self, self:_scoreStatus(self.teams))
 end
 
 function PictionaryScreen:onClose()

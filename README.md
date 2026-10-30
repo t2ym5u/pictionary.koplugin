@@ -50,7 +50,7 @@ No typing during the game — just the drawer and the device, everyone else watc
 | **Voir le mot / Show the word** | Reveal the word to the drawer + start timer |
 | **✓ Trouvé ! / ✓ Got it!** | Team guessed — +1 point, next team |
 | **✗ Raté / ✗ Missed** | Not guessed — 0 points, next team |
-| **Options** | Language, teams, timer, category, difficulty, reset |
+| **Menu** | New game (resets the scores), Difficulty, Language (word list), Teams, Timer, Category, Rules |
 | **Rules** | Show rules reminder |
 | **Close** | Exit |
 
