@@ -17,7 +17,7 @@ require("i18n").extend(lrequire("i18n_fr"))
 
 local Pictionary = PluginBase:extend{
     name      = "pictionary",
-    menu_text = _("Pictionary Party"),
+    menu_text = _("Draw & Guess"),
     menu_hint = "tools",
 }
 

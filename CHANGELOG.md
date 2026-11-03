@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-11-02
+
+### Changed
+- Renamed from "Pictionary Party" to "Draw & Guess" (FR « Dessine et devine »): it is listed under Tools → Games → Party & quiz, so "Party" said nothing, and the new name is not a trademark. The plugin id and settings are unchanged.
+
 ## [1.2.1] - 2026-11-02
 
 ### Changed
