@@ -24,6 +24,7 @@ local T               = require("ffi/util").template
 local MenuHelper  = require("menu_helper")
 local ScreenBase  = require("screen_base")
 local Words       = lrequire("words")
+local Deck        = lrequire("deck")
 
 local DeviceScreen = Device.screen
 
@@ -122,27 +123,8 @@ end
 -- ---------------------------------------------------------------------------
 
 function PictionaryScreen:_pickWord()
-    local lang_list = Words[self.lang] or Words.fr
-    local pool = {}
-    local diffs = self.difficulty == "mixed" and { "e", "m", "h" } or { self.difficulty:sub(1,1) }
-
-    for _, cat in ipairs(lang_list) do
-        if self.category == "all" or cat.id == self.category then
-            for _, d in ipairs(diffs) do
-                local wlist = cat.words[d]
-                if wlist then
-                    for _, w in ipairs(wlist) do
-                        pool[#pool + 1] = { word = w, cat = cat.name }
-                    end
-                end
-            end
-        end
-    end
-
-    if #pool == 0 then
-        return { word = "???", cat = "???" }
-    end
-    return pool[math.random(#pool)]
+    local lang = Words[self.lang] and self.lang or "fr"
+    return Deck.pick(self.plugin, Words, lang, self.category, self.difficulty)
 end
 
 -- ---------------------------------------------------------------------------

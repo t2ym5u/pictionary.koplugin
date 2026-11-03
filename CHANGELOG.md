@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-11-03
+
+### Changed
+- A word no longer comes back during a game: words already drawn are
+  remembered (per language, across games too) and only come back once every
+  word of the chosen category and difficulty has been drawn.
+
 ## [1.3.0] - 2026-11-02
 
 ### Changed
