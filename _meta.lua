@@ -1,6 +1,6 @@
 local _ = require("gettext")
 return {
-    fullname    = _("Pictionary Party"),
+    fullname    = _("Draw & Guess"),
     description = _("Draw words against the clock — team-based party game."),
-    version     = "1.2.1",
+    version     = "1.3.0",
 }

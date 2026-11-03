@@ -64,7 +64,7 @@ local DEFAULT_DIFF      = "mixed"
 local DEFAULT_CAT       = "all"
 
 local GAME_RULES_EN = _([[
-Pictionary Party — Rules
+Draw & Guess — Rules
 
 Teams take turns. The current team's drawer receives the device, sees the word privately, then draws it on paper while teammates guess.
 
@@ -77,7 +77,7 @@ First team to reach the agreed score wins!
 ]])
 
 local GAME_RULES_FR = [[
-Pictionary Party — Règles
+Dessine et devine — Règles
 
 Les équipes jouent à tour de rôle. Le dessinateur reçoit l'appareil, voit le mot en secret, puis le dessine sur papier pendant que ses coéquipiers devinent.
 
@@ -331,7 +331,7 @@ function PictionaryScreen:buildLayout()
 end
 
 function PictionaryScreen:_titleBar()
-    return self:buildTitleBar(_("Pictionary Party"), function()
+    return self:buildTitleBar(_("Draw & Guess"), function()
         return {
             { text = _("New game"), callback = function() self:onNewGame() end },
             { text = T(_("Difficulty: %1"), self:_diffLabel()), callback = function() self:openDifficultyMenu() end },

@@ -1,6 +1,6 @@
 # pictionary.koplugin
 
-A **Pictionary Party** display plugin for [KOReader](https://github.com/koreader/koreader) — put your e-reader in the middle of the table and play Pictionary with pen and paper.
+A **Draw & Guess** (FR « Dessine et devine ») display plugin for [KOReader](https://github.com/koreader/koreader) — put your e-reader in the middle of the table and play draw-and-guess with pen and paper.
 
 ## Screenshot
 
@@ -67,7 +67,7 @@ game-common/          → alongside plugins/ (shared library)
 
 1. Download `pictionary.zip` from [Releases](../../releases).
 2. Extract to your KOReader `plugins/` directory.
-3. Restart KOReader — **Pictionary Party** appears in the Tools menu.
+3. Restart KOReader — **Draw & Guess** appears under Tools → Games → Party & quiz.
 
 ## Development
 
