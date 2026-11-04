@@ -10,7 +10,22 @@ describe("pictionary word list", function()
     local words
 
     setup(function()
-        words = require("words")
+        -- words.lua reads one language at a time: keep every list here.
+        local Words = require("words")
+        words = {}
+        for _, lang in ipairs(Words.LANGUAGES) do words[lang] = Words[lang] end
+    end)
+
+    it("reads a language only when asked, one at a time, none after release", function()
+        local Words = dofile(DIR .. "words.lua")
+        assert.are.same({}, Words.loadedLanguages())
+        assert.is_true(#Words.fr > 0)
+        assert.are.same({ "fr" }, Words.loadedLanguages())
+        assert.is_true(#Words.en > 0)
+        assert.are.same({ "en" }, Words.loadedLanguages())
+        assert.is_nil(Words.de)
+        Words.release()
+        assert.are.same({}, Words.loadedLanguages())
     end)
 
     it("offers at least one language, each an array of categories", function()

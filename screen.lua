@@ -457,4 +457,10 @@ function PictionaryScreen:onClose()
     ScreenBase.onClose(self)
 end
 
+-- The word lists are only needed while a game is open: drop them when the
+-- screen closes (the next game reads its language's list again).
+function PictionaryScreen:onCloseWidget()
+    Words.release()
+end
+
 return PictionaryScreen
