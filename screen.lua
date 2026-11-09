@@ -97,7 +97,7 @@ La première équipe au score convenu gagne !
 local PictionaryScreen = ScreenBase:extend{}
 
 function PictionaryScreen:init()
-    self.lang       = self.plugin:getSetting("lang", "fr")
+    self.lang       = self.plugin:getLang({ "fr", "en" })
     self.duration   = self.plugin:getSetting("duration", DEFAULT_DURATION)
     self.difficulty = self.plugin:getSetting("difficulty", DEFAULT_DIFF)
     self.category   = self.plugin:getSetting("category", DEFAULT_CAT)
@@ -212,7 +212,7 @@ function PictionaryScreen:openLangMenu()
         parent     = self,
         on_select  = function(lang)
             self.lang = lang
-            self.plugin:saveSetting("lang", lang)
+            self.plugin:setLang(lang)
             self:buildLayout()
             UIManager:setDirty(self, function() return "ui", self.dimen end)
         end,
