@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0] - 2026-11-10
+
+### Added
+- Twice as many French words: 80 per category and level instead of 40,
+  5,795 in all (was 2,880). The game remembers the last 6,000 words it
+  dealt (was 3,000), so it goes through all of them before repeating.
+
 All notable changes to this project will be documented in this file.
 
 ## [1.4.3] - 2026-11-09

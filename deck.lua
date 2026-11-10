@@ -11,8 +11,8 @@ local SeenHistory = require("seen_history")
 
 local Deck = {}
 
--- Every word list of every language holds at most ~3000 words.
-Deck.HISTORY_MAX = 3000
+-- Every word list of every language holds at most ~5800 words.
+Deck.HISTORY_MAX = 6000
 
 -- Pool of { word, cat } entries. A word listed in two categories ("Requin"
 -- in both Animaux and Océan) is kept once, under its first category.
