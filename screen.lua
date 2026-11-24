@@ -134,7 +134,7 @@ end
 function PictionaryScreen:_startCountdown()
     self._tick_gen = (self._tick_gen or 0) + 1
     local gen = self._tick_gen
-    UIManager:scheduleIn(1, function() self:_onTick(gen) end)
+    self:schedule(1, function() self:_onTick(gen) end)
 end
 
 function PictionaryScreen:_stopCountdown()
@@ -149,7 +149,7 @@ function PictionaryScreen:_onTick(gen)
         UIManager:setDirty(self, function() return "fast", self.dimen end)
     end
     if self.time_remaining > 0 then
-        UIManager:scheduleIn(1, function() self:_onTick(gen) end)
+        self:schedule(1, function() self:_onTick(gen) end)
     end
     -- At zero: timer stops, [✓]/[✗] buttons remain for manual resolution
 end
@@ -188,6 +188,7 @@ end
 
 -- New game: scores back to zero, first team to play.
 function PictionaryScreen:onNewGame()
+    self:cancelScheduled()
     self:_stopCountdown()
     for _i, t in ipairs(self.teams) do t.score = 0 end
     self.current_team = 1
